@@ -1,0 +1,31 @@
+name: Bug report
+description: Something doesn't work as described
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Activity log or error
+      description: The relevant lines from the website's Activity log or the container log. Remove private data.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Shown next to the logo, e.g. v0.3.0
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How do you run ScrapeFlow?
+      options: [Docker Compose, Docker image, From source]
+    validations:
+      required: true

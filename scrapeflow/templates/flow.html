@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Flow · {{ site.name }} · ScrapeFlow{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', path='vendor/drawflow/drawflow.min.css') }}">
+<div class="flow-page" id="flow-app" data-site="{{ site.id }}" data-model="{{ 1 if model else '' }}">
+  <div class="flow-head">
+    <div class="grow">
+      <div class="crumbs"><a href="/">Websites</a><span>/</span><a href="/sites/{{ site.id }}">{{ site.name }}</a><span>/</span><span>Flow</span></div>
+      <div class="row"><h1>Flow</h1><span class="pill no-dot" id="flow-state">Saved</span></div>
+    </div>
+    <div class="toolbar">
+      <a class="btn" href="/sites/{{ site.id }}">{{ icon("back", "sm") }}Back</a>
+      <button class="btn" type="button" id="btn-reset" title="Replace with Website → Save to storage">{{ icon("refresh", "sm") }}Reset</button>
+      <button class="btn" type="button" data-open="test-dialog">{{ icon("play", "sm") }}Test on a file</button>
+      <button class="btn primary" type="button" id="btn-save">{{ icon("check", "sm") }}Save</button>
+    </div>
+  </div>
+
+  <div class="flow-notes" id="flow-notes" hidden></div>
+
+  <div class="flow-shell card">
+    <aside class="palette">
+      <div class="palette-title">Nodes</div>
+      <div id="palette"></div>
+      <p class="palette-help">Drag a node onto the canvas, then connect an output (right dot) to an input (left dot). Select a node to edit it; <kbd>Delete</kbd> removes it.</p>
+    </aside>
+    <div class="canvas-wrap">
+      <div id="drawflow" class="canvas"></div>
+      <div class="zoom">
+        <button type="button" class="btn sm icon-only" id="zoom-out" title="Zoom out">−</button>
+        <button type="button" class="btn sm icon-only" id="zoom-reset" title="Reset zoom">1:1</button>
+        <button type="button" class="btn sm icon-only" id="zoom-in" title="Zoom in">+</button>
+      </div>
+    </div>
+    <aside class="inspector" id="inspector">
+      <div class="inspector-empty">
+        <span class="icon-wrap">{{ icon("settings") }}</span>
+        <b>Select a node</b>
+        <p class="muted small">Its settings appear here.</p>
+      </div>
+    </aside>
+  </div>
+
+  <div class="card flow-after">
+    <div class="between">
+      <div><h3>Apply to files you already have</h3><p class="muted small">A saved flow is used for new and changed files. Reprocess sends every stored file through it again – e.g. after adding To Markdown.</p></div>
+      <form method="post" action="/sites/{{ site.id }}/reprocess" data-confirm="Download every stored file again and send it through the saved flow?">
+        <button class="btn" {{ 'disabled' if running }} data-busy="Starting">{{ icon("refresh", "sm") }}Reprocess all files</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<dialog id="test-dialog" class="wide-dialog">
+  <form id="test-form">
+    <div class="dialog-head">
+      <span class="avatar sm" style="--c: var(--primary)">{{ icon("play", "sm") }}</span>
+      <div class="grow"><h2>Test the flow</h2><p>Runs the flow as it is on the canvas – nothing is saved.</p></div>
+      <button class="btn ghost sm icon-only" data-close title="Close">{{ icon("x", "sm") }}</button>
+    </div>
+    <div class="dialog-body fields">
+      {% if files %}
+      <div class="row">
+        <select class="input grow" id="test-file" aria-label="File">
+          {% for f in files %}<option value="{{ f.id }}">{{ f.filename }}{% if f.status != "stored" %} ({{ f.status }}){% endif %}</option>{% endfor %}
+        </select>
+        <button class="btn primary" type="submit" id="test-run">{{ icon("play", "sm") }}Run</button>
+      </div>
+      <div class="console test-console" id="test-log"><div class="console-empty">Pick a file and press Run.</div></div>
+      <div id="test-outputs" class="test-outputs"></div>
+      {% else %}
+      <p class="muted">No files yet – run a check of the website first.</p>
+      {% endif %}
+    </div>
+  </form>
+</dialog>
+
+<dialog id="code-dialog" class="code-dialog">
+  <form method="dialog">
+    <div class="dialog-head"><div class="grow"><h2>Python code</h2><p><code>def process(input_path, meta, output_dir)</code> runs once per file.</p></div>
+      <button class="btn ghost sm icon-only" data-close title="Close">{{ icon("x", "sm") }}</button></div>
+    <div class="dialog-body"><textarea class="input code-input big" id="code-big" spellcheck="false"></textarea></div>
+    <div class="dialog-foot"><span class="grow muted small">Tab inserts four spaces.</span><button class="btn primary" value="ok">Done</button></div>
+  </form>
+</dialog>
+
+<script id="flow-data" type="application/json">{{ flow_json | safe }}</script>
+<script id="node-types" type="application/json">{{ node_types_json | safe }}</script>
+<script src="{{ url_for('static', path='vendor/drawflow/drawflow.min.js') }}"></script>
+<script src="{{ url_for('static', path='flow.js') }}?v={{ version }}"></script>
+{% endblock %}

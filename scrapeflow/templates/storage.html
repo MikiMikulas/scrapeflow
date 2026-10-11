@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Storage · ScrapeFlow{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Storage</h1>
+    <p>Where ScrapeFlow saves the files it finds. Every file remembers where it was saved, so you can switch at any time.</p>
+  </div>
+</div>
+
+<div class="section-title"><h2>In use</h2></div>
+<div class="card active-card">
+  <span class="logo" style="--c: {{ active.color }}">{{ active.label[:1] }}</span>
+  <div class="grow">
+    <div class="row"><h3>{{ active.label }}</h3><span class="pill good">Active</span></div>
+    <div class="kv" style="margin-top: 8px"><div>Saving to<b class="mono">{{ target or "not configured" }}</b></div></div>
+  </div>
+  <button class="btn" data-open="storage-{{ active.key }}">{{ icon("pencil", "sm") }}Edit</button>
+</div>
+
+<div class="section-title"><h2>Available storage</h2><span class="muted small">{{ cards | length }} options</span></div>
+<div class="grid-cards">
+  {% for c in cards %}
+  {% set is_active = c.key == active.key %}
+  {% set cls = backends.get(c.backend) %}
+  <div class="card provider">
+    <div class="between">
+      <span class="logo" style="--c: {{ c.color }}">{{ c.label[:1] }}</span>
+      <span class="chips">{% for t in c.tags %}<span class="tag">{{ t }}</span>{% endfor %}</span>
+    </div>
+    <div><h3>{{ c.label }}</h3><p class="desc">{{ c.description }}</p></div>
+    <div class="foot">
+      {% if is_active %}<span class="pill good">In use</span>{% else %}<span></span>{% endif %}
+      <button class="btn sm {{ '' if is_active else 'primary' }}" data-open="storage-{{ c.key }}">{% if is_active %}Edit{% else %}Connect{% endif %}</button>
+    </div>
+  </div>
+
+  <dialog id="storage-{{ c.key }}">
+    <form method="post" action="/settings/storage">
+      <input type="hidden" name="preset" value="{{ c.key }}">
+      <input type="hidden" name="backend" value="{{ c.backend }}">
+      <div class="dialog-head">
+        <span class="logo" style="--c: {{ c.color }}">{{ c.label[:1] }}</span>
+        <div class="grow"><h2>{{ c.label }}</h2><p>{{ c.description }}</p></div>
+        <button class="btn ghost sm icon-only" data-close title="Close">{{ icon("x", "sm") }}</button>
+      </div>
+      <div class="dialog-body fields">
+        {% set v = values[c.key] %}
+        {% for f in cls.fields %}
+          {% if f.kind == "checkbox" %}
+          <label class="check"><input type="checkbox" name="{{ f.name }}" {{ 'checked' if v.get(f.name) }}><span>{{ f.label }}{% if f.help %}<small>{{ f.help }}</small>{% endif %}</span></label>
+          {% else %}
+          <div class="field">
+            <label for="s-{{ c.key }}-{{ f.name }}">{{ f.label }}{% if not f.required %} <span class="muted">(optional)</span>{% endif %}</label>
+            <input class="input" id="s-{{ c.key }}-{{ f.name }}" name="{{ f.name }}" autocomplete="off"
+                   type="{{ 'password' if f.secret or f.kind == 'password' else 'text' }}" value="{{ v.get(f.name, '') }}"
+                   placeholder="{{ 'Saved – leave empty to keep' if f.name in v["_secrets_set"] else f.placeholder }}"
+                   {{ 'required' if f.required and not (f.secret and f.name in v["_secrets_set"]) }}>
+            {% if f.help %}<span class="hint">{{ f.help }}</span>{% endif %}
+          </div>
+          {% endif %}
+        {% else %}
+          <p class="muted">No settings needed.</p>
+        {% endfor %}
+      </div>
+      <div class="dialog-foot">
+        <span class="test-result grow muted">Test writes, reads and deletes a small file.</span>
+        <button type="button" class="btn" data-test="storage">{{ icon("zap", "sm") }}Test</button>
+        <button class="btn primary" data-busy="Saving">Save &amp; use</button>
+      </div>
+    </form>
+  </dialog>
+  {% endfor %}
+</div>
+{% endblock %}

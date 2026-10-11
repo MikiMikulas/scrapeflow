@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Account · ScrapeFlow{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Account</h1>
+    <p>Your profile, password and the API key for scripts.</p>
+  </div>
+</div>
+
+{% if not user %}
+<div class="banner warn">{{ icon("alert") }}<span class="grow">Sign-in is turned off (<code>SCRAPEFLOW_AUTH_DISABLED=true</code>), so there are no accounts.</span></div>
+{% else %}
+{% if error %}<div class="errors" role="alert">{{ error }}</div>{% endif %}
+<div class="account-grid">
+  <form class="card" method="post">
+    <input type="hidden" name="action" value="profile">
+    <div class="card-pad fields">
+      <div class="row"><span class="user-avatar" style="--c: {{ user.email | color }}">{{ user.name[:1] }}</span><h3>Profile</h3></div>
+      <div class="field"><label for="a-name">Name</label><input class="input" id="a-name" name="name" value="{{ user.name }}"></div>
+      <div class="field"><label for="a-email">E-mail</label><input class="input" id="a-email" name="email" type="email" value="{{ user.email }}" required></div>
+      <p class="muted small">Last sign-in {{ user.last_login_at | ago }} · account created {{ user.created_at | date }}</p>
+    </div>
+    <div class="dialog-foot"><span class="grow"></span><button class="btn primary">Save profile</button></div>
+  </form>
+
+  <form class="card" method="post">
+    <input type="hidden" name="action" value="password">
+    <div class="card-pad fields">
+      <h3>Password</h3>
+      <div class="field"><label for="a-current">Current password</label><input class="input" id="a-current" name="current" type="password" autocomplete="current-password" required></div>
+      <div class="fields two">
+        <div class="field"><label for="a-new">New password</label><input class="input" id="a-new" name="password" type="password" minlength="8" autocomplete="new-password" required></div>
+        <div class="field"><label for="a-confirm">Confirm</label><input class="input" id="a-confirm" name="confirm" type="password" minlength="8" autocomplete="new-password" required></div>
+      </div>
+      <p class="muted small">Changing it signs out all other browsers.</p>
+    </div>
+    <div class="dialog-foot"><span class="grow"></span><button class="btn primary">Change password</button></div>
+  </form>
+
+  <div class="card account-wide">
+    <div class="card-pad fields">
+      <h3>API key</h3>
+      <p class="muted">Scripts and tools use the JSON API with <code>Authorization: Bearer &lt;key&gt;</code>. See the <a href="/docs" target="_blank">API docs</a>.</p>
+      {% if api_key %}
+      <div class="banner">{{ icon("check") }}<span class="grow">Copy the key now – it won't be shown again.</span></div>
+      <div class="row"><input class="input mono" id="api-key" value="{{ api_key }}" readonly onclick="this.select()"><button type="button" class="btn" onclick="navigator.clipboard.writeText(document.getElementById('api-key').value); this.textContent='Copied'">Copy</button></div>
+      <pre class="code-sample">curl -H "Authorization: Bearer {{ api_key }}" {{ request.base_url }}api/sites</pre>
+      {% elif user.api_key_hint %}
+      <p>Active key ending in <code>…{{ user.api_key_hint }}</code>.</p>
+      {% else %}
+      <p class="muted">No API key yet.</p>
+      {% endif %}
+    </div>
+    <div class="dialog-foot">
+      <span class="grow"></span>
+      {% if user.api_key_hint and not api_key %}
+      <form method="post" data-confirm="Revoke the API key? Scripts using it stop working."><input type="hidden" name="action" value="revoke_api_key"><button class="btn danger">Revoke</button></form>
+      {% endif %}
+      <form method="post" {% if user.api_key_hint %}data-confirm="Create a new key? The current one stops working."{% endif %}><input type="hidden" name="action" value="api_key"><button class="btn primary">{{ "Create a new key" if user.api_key_hint else "Create API key" }}</button></form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

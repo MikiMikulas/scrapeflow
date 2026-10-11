@@ -1,0 +1,64 @@
+{# Fields shared by the "Add website" dialog and the site's Settings tab. Needs: site, is_new, setup #}
+<div class="fields">
+  <div class="field">
+    <label for="f-url-{{ site.id or 'new' }}">Website</label>
+    <input class="input" id="f-url-{{ site.id or 'new' }}" name="url" value="{{ site.url }}" placeholder="example.com/documents" required {% if is_new %}autofocus{% endif %}>
+    <span class="hint">ScrapeFlow starts here and follows links on the same website.</span>
+  </div>
+  <div class="fields two">
+    <div class="field">
+      <label for="f-name-{{ site.id or 'new' }}">Name <span class="muted">(optional)</span></label>
+      <input class="input" id="f-name-{{ site.id or 'new' }}" name="name" value="{{ site.name }}" placeholder="defaults to the domain">
+    </div>
+    <div class="field">
+      <label for="f-schedule-{{ site.id or 'new' }}">Check</label>
+      <select class="input" id="f-schedule-{{ site.id or 'new' }}" name="schedule">
+        {% for key, (label, _) in SCHEDULES.items() %}
+        <option value="{{ key }}" {{ 'selected' if site.schedule == key }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  {% if is_new %}
+  <label class="check">
+    <input type="checkbox" name="download_existing" {{ 'checked' if site.download_existing }}>
+    <span>Also store files that are already on the website<small>Otherwise only files that appear from now on are stored.</small></span>
+  </label>
+  {% else %}
+  <label class="check">
+    <input type="checkbox" name="active" {{ 'checked' if site.active }}>
+    <span>Check automatically<small>Uncheck to pause scheduled checks. “Check now” still works.</small></span>
+  </label>
+  {% endif %}
+
+  <details class="advanced" {{ 'open' if not is_new }}>
+    <summary>Advanced</summary>
+    <div class="fields">
+      <div class="fields two">
+        <div class="field">
+          <label for="f-depth-{{ site.id or 'new' }}">Link depth</label>
+          <input class="input" id="f-depth-{{ site.id or 'new' }}" name="max_depth" type="number" min="0" max="20" value="{{ site.max_depth }}">
+          <span class="hint">Clicks away from the start page. 0 = this page only.</span>
+        </div>
+        <div class="field">
+          <label for="f-pages-{{ site.id or 'new' }}">Max pages</label>
+          <input class="input" id="f-pages-{{ site.id or 'new' }}" name="max_pages" type="number" min="1" value="{{ site.max_pages }}">
+          <span class="hint">Pages visited per check at most.</span>
+        </div>
+      </div>
+      <div class="fields two">
+        <div class="field">
+          <label for="f-types-{{ site.id or 'new' }}">File types</label>
+          <input class="input" id="f-types-{{ site.id or 'new' }}" name="file_types" value="{{ site.file_types or '' }}" placeholder="all documents">
+          <span class="hint">e.g. <code>pdf, docx, xlsx</code></span>
+        </div>
+        <div class="field">
+          <label for="f-folder-{{ site.id or 'new' }}">Folder in storage</label>
+          <input class="input" id="f-folder-{{ site.id or 'new' }}" name="storage_folder" value="{{ site.storage_folder or '' }}" placeholder="named after the website">
+        </div>
+      </div>
+      <p class="hint">Filters, AI, conversion to Markdown and your own Python code are set up in the {% if site.id %}<a href="/sites/{{ site.id }}/flow">Flow editor</a>{% else %}Flow editor after adding the website{% endif %}.</p>
+      </div>
+    </div>
+  </details>
+</div>

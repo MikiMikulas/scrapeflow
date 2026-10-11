@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, avatar, site_status %}
+{% block title %}Websites · ScrapeFlow{% endblock %}
+{% block content %}
+
+{% if not sites or not setup.storage_saved %}
+<div class="card steps">
+  <a class="step {{ 'done' if setup.model else '' }}" href="/settings/models">
+    <span class="step-num">{% if setup.model %}{{ icon("check", "sm") }}{% else %}1{% endif %}</span>
+    <span><b>Connect a model</b><span>{{ "Configured" if setup.model else "Optional – for the AI file filter" }}</span></span>
+  </a>
+  <a class="step {{ 'done' if setup.storage_saved else 'todo' }}" href="/settings/storage">
+    <span class="step-num">{% if setup.storage_saved %}{{ icon("check", "sm") }}{% else %}2{% endif %}</span>
+    <span><b>Choose storage</b><span>{{ "Saved" if setup.storage_saved else "Local folder until you pick S3, Nextcloud…" }}</span></span>
+  </a>
+  <a class="step {{ 'done' if sites else ('todo' if setup.storage_saved else '') }}" href="#add" data-open="add-site">
+    <span class="step-num">{% if sites %}{{ icon("check", "sm") }}{% else %}3{% endif %}</span>
+    <span><b>Add a website</b><span>ScrapeFlow copies its files into your storage</span></span>
+  </a>
+</div>
+{% endif %}
+
+<div class="page-head">
+  <div>
+    <h1>Websites</h1>
+    <p>Every website is crawled on its schedule. New and changed files are copied into your storage.</p>
+  </div>
+  <div class="toolbar">
+    {% if sites %}
+    <label class="search">{{ icon("search", "sm") }}<input class="input" type="search" placeholder="Search" data-filter=".site-card" aria-label="Search websites"></label>
+    {% endif %}
+    <button class="btn primary" data-open="add-site">{{ icon("plus") }}Add website</button>
+  </div>
+</div>
+
+<div class="grid-cards">
+  {% for site in sites %}
+  {% set st = stats.get(site.id, {"files": 0, "size": 0}) %}
+  <a class="card site-card" href="/sites/{{ site.id }}">
+    <div class="between">
+      {{ avatar(site) }}
+      {{ site_status(site, site.id in running) }}
+    </div>
+    <div>
+      <div class="title truncate">{{ site.name }}</div>
+      <div class="muted small truncate">{{ site.url | domain }}{{ site.url | path if (site.url | path) != "/" }}</div>
+    </div>
+    <div class="meta">
+      <span title="Stored files">{{ icon("files", "sm") }}{{ st.files }} files · {{ st.size | filesize if st.size else "0 B" }}</span>
+      <span title="Schedule">{{ icon("calendar", "sm") }}{{ SCHEDULES[site.schedule][0] }}</span>
+      <span title="Last check">{{ icon("clock", "sm") }}{{ site.last_checked_at | ago }}</span>
+    </div>
+  </a>
+  {% endfor %}
+  <button type="button" class="add-card" data-open="add-site">
+    <span><span class="plus">{{ icon("plus") }}</span><b>Add website</b><br><span class="small">Paste an address, pick how often to check</span></span>
+  </button>
+</div>
+
+<dialog id="add-site" {% if errors %}data-autoopen{% endif %}>
+  <form method="post" action="/sites">
+    <div class="dialog-head">
+      <span class="avatar sm" style="--c: var(--primary)">{{ icon("globe", "sm") }}</span>
+      <div class="grow"><h2>Add website</h2><p>All files linked from the website will be watched.</p></div>
+      <button class="btn ghost sm icon-only" data-close title="Close">{{ icon("x", "sm") }}</button>
+    </div>
+    <div class="dialog-body">
+      {% if errors %}<ul class="errors">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      {% with site=new_site, is_new=True %}{% include "_site_fields.html" %}{% endwith %}
+    </div>
+    <div class="dialog-foot">
+      <span class="grow muted">The first check starts right away.</span>
+      <button class="btn" data-close>Cancel</button>
+      <button class="btn primary" data-busy="Adding">Add website</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}
+{% block scripts %}
+{% if running %}<script>setTimeout(() => location.reload(), 5000);</script>{% endif %}
+{% endblock %}

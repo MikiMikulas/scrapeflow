@@ -1,0 +1,135 @@
+{% from "_macros.html" import icon %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ScrapeFlow{% endblock %}</title>
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='logo.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <script>
+    // Apply the saved theme before first paint to avoid a flash.
+    try { const t = localStorage.getItem("scrapeflow-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}?v={{ version }}">
+</head>
+{% set path = request.url.path %}
+{% set current_user = request.state.user %}
+<body>
+  {% include "_icons.html" %}
+  <header class="header">
+    <div class="brand-wrap">
+      <a class="brand" href="/"><img class="brand-logo" src="{{ url_for('static', path='logo.svg') }}" alt=""><span class="brand-name">Scrape<b>Flow</b></span></a>
+      <a class="version" href="{{ GITHUB_URL }}/releases" target="_blank" rel="noopener" title="Release notes">v{{ version }}</a>
+    </div>
+    <nav class="tabs" aria-label="Main">
+      <a href="/" class="{{ 'active' if path == '/' or path.startswith('/sites') }}">{{ icon("globe", "sm") }}Websites</a>
+      <a href="/settings/models" class="{{ 'active' if path.startswith('/settings/models') }}">{{ icon("cpu", "sm") }}Model providers</a>
+      <a href="/settings/storage" class="{{ 'active' if path.startswith('/settings/storage') }}">{{ icon("database", "sm") }}Storage</a>
+    </nav>
+    <div class="header-right">
+      <button type="button" class="btn ghost icon-only" id="theme-toggle" title="Switch theme">{{ icon("moon") }}</button>
+      <a class="btn ghost icon-only" href="/docs" target="_blank" title="API docs">{{ icon("book") }}</a>
+      <a class="btn ghost github-link" href="{{ GITHUB_URL }}" target="_blank" rel="noopener" title="Documentation and source code on GitHub">{{ icon("github") }}<span>GitHub</span></a>
+      {% if current_user %}
+      <details class="user-menu">
+        <summary class="user-chip" title="{{ current_user.email }}"><span class="user-avatar" style="--c: {{ current_user.email | color }}">{{ current_user.name[:1] }}</span></summary>
+        <div class="menu-pop card">
+          <div class="menu-who"><b>{{ current_user.name }}</b><span>{{ current_user.email }}</span></div>
+          <a href="/settings/account">{{ icon("settings", "sm") }}Account &amp; API key</a>
+          <a href="{{ GITHUB_URL }}#readme" target="_blank" rel="noopener">{{ icon("book", "sm") }}Documentation</a>
+          <form method="post" action="/logout"><button>{{ icon("external", "sm") }}Sign out</button></form>
+        </div>
+      </details>
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="page">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% set toast = request.query_params.get("toast") %}
+  {% if toast %}<div class="toast" role="status">{{ icon("check") }}{{ toast }}</div>{% endif %}
+
+  <script>
+    (function () {
+      // Theme: light ⇄ dark (the first click leaves "follow the system" mode)
+      const root = document.documentElement;
+      const btn = document.getElementById("theme-toggle");
+      const isDark = () => root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      const paint = () => btn.querySelector("use").setAttribute("href", isDark() ? "#i-sun" : "#i-moon");
+      btn.addEventListener("click", () => {
+        root.dataset.theme = isDark() ? "light" : "dark";
+        try { localStorage.setItem("scrapeflow-theme", root.dataset.theme); } catch (e) {}
+        paint();
+      });
+      paint();
+
+      // Close the user menu when clicking elsewhere
+      document.addEventListener("click", (e) => {
+        document.querySelectorAll("details.user-menu[open]").forEach(d => { if (!d.contains(e.target)) d.open = false; });
+      });
+
+      // Dialogs: <button data-open="id">, <button data-close>
+      document.addEventListener("click", (e) => {
+        const opener = e.target.closest("[data-open]");
+        if (opener) { e.preventDefault(); document.getElementById(opener.dataset.open)?.showModal(); }
+        const closer = e.target.closest("[data-close]");
+        if (closer) { e.preventDefault(); closer.closest("dialog")?.close(); }
+      });
+      document.querySelectorAll("dialog[data-autoopen]").forEach(d => d.showModal());
+      if (location.hash === "#add") document.getElementById("add-site")?.showModal();
+
+      // Confirmations and busy buttons
+      document.addEventListener("submit", (e) => {
+        const form = e.target;
+        if (form.dataset.confirm && !confirm(form.dataset.confirm)) { e.preventDefault(); return; }
+        const b = e.submitter && e.submitter.dataset.busy !== undefined ? e.submitter : null;
+        if (b) { setTimeout(() => { b.disabled = true; b.innerHTML = '<span class="spinner"></span>' + (b.dataset.busy || b.textContent); }); }
+      });
+
+      // "Test" buttons in the model and storage dialogs
+      document.addEventListener("click", async (e) => {
+        const b = e.target.closest("[data-test]");
+        if (!b) return;
+        const form = b.closest("form");
+        const out = form.querySelector(".test-result");
+        const data = Object.fromEntries(new FormData(form));
+        let url, body;
+        if (b.dataset.test === "ai") {
+          url = "/api/ai/test";
+          body = { preset: data.preset, base_url: data.base_url ?? null, api_key: data.api_key || "", model: data.model || null };
+        } else {
+          url = "/api/storage/test";
+          const { preset, backend, ...options } = data;
+          form.querySelectorAll("input[type=checkbox]").forEach(c => options[c.name] = c.checked ? "on" : "");
+          body = { backend, options };
+        }
+        const label = b.innerHTML;
+        b.disabled = true; b.innerHTML = '<span class="spinner"></span>Testing';
+        out.className = "test-result grow"; out.textContent = "";
+        try {
+          const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+          const j = await r.json().catch(() => ({}));
+          if (r.ok) { out.classList.add("ok"); out.textContent = "✓ Works – " + (j.target || j.model || "connected"); }
+          else { out.classList.add("err"); out.textContent = typeof j.detail === "string" ? j.detail : "Test failed (HTTP " + r.status + ")"; }
+        } catch (err) { out.classList.add("err"); out.textContent = String(err); }
+        b.disabled = false; b.innerHTML = label;
+      });
+
+      // Client-side search over cards
+      document.querySelectorAll("[data-filter]").forEach(input => {
+        const items = document.querySelectorAll(input.dataset.filter);
+        input.addEventListener("input", () => {
+          const q = input.value.trim().toLowerCase();
+          items.forEach(el => el.hidden = q && !el.textContent.toLowerCase().includes(q));
+        });
+      });
+    })();
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Model providers · ScrapeFlow{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Model providers</h1>
+    <p>A model is optional. It powers the AI filter that decides which new files to store (“only invoices and contracts”).</p>
+  </div>
+</div>
+
+<div class="section-title"><h2>Added model</h2></div>
+{% if active %}
+<div class="card active-card">
+  <span class="logo" style="--c: {{ active.color }}">{{ active.label[:1] }}</span>
+  <div class="grow">
+    <div class="row"><h3>{{ active.label }}</h3><span class="pill good">Configured</span></div>
+    <div class="kv" style="margin-top: 8px">
+      <div>Model<b>{{ cfg.model or "default" }}</b></div>
+      {% if cfg.base_url %}<div>Base URL<b class="mono">{{ cfg.base_url }}</b></div>{% endif %}
+      <div>API key<b>{{ key_info.api_key_hint or "none" }}</b></div>
+    </div>
+  </div>
+  <div class="row">
+    <button class="btn" data-open="model-{{ active.key }}">{{ icon("pencil", "sm") }}Edit</button>
+    <form method="post" action="/settings/models/remove" data-confirm="Remove the model? Websites with an AI filter will store every file.">
+      <button class="btn danger">{{ icon("trash", "sm") }}Remove</button>
+    </form>
+  </div>
+</div>
+{% else %}
+<div class="card active-card none">
+  <span class="avatar sm" style="--c: var(--border-strong)">{{ icon("cpu", "sm") }}</span>
+  <div class="grow"><h3>No model yet</h3><p class="muted">Pick a provider below and enter its API key. Local servers such as Ollama need no key.</p></div>
+</div>
+{% endif %}
+
+<div class="section-title"><h2>Models to be added</h2><span class="muted small">{{ cards | length }} providers</span></div>
+<div class="grid-cards">
+  {% for c in cards %}
+  <div class="card provider">
+    <div class="between">
+      <span class="logo" style="--c: {{ c.color }}">{{ c.label[:1] }}</span>
+      <span class="chips">{% for t in c.tags %}<span class="tag">{{ t }}</span>{% endfor %}</span>
+    </div>
+    <div><h3>{{ c.label }}</h3><p class="desc">{{ c.description }}</p></div>
+    <div class="foot">
+      {% if active and active.key == c.key %}<span class="pill good">In use</span>{% else %}<span></span>{% endif %}
+      <button class="btn sm {{ '' if active and active.key == c.key else 'primary' }}" data-open="model-{{ c.key }}">
+        {% if active and active.key == c.key %}Edit{% else %}{{ icon("plus", "sm") }}Add the model{% endif %}
+      </button>
+    </div>
+  </div>
+
+  {% set is_active = active and active.key == c.key %}
+  <dialog id="model-{{ c.key }}">
+    <form method="post" action="/settings/models">
+      <input type="hidden" name="preset" value="{{ c.key }}">
+      <div class="dialog-head">
+        <span class="logo" style="--c: {{ c.color }}">{{ c.label[:1] }}</span>
+        <div class="grow"><h2>{{ c.label }}</h2><p>{{ c.description }}</p></div>
+        <button class="btn ghost sm icon-only" data-close title="Close">{{ icon("x", "sm") }}</button>
+      </div>
+      <div class="dialog-body fields">
+        {% if c.base_url is not none %}
+        <div class="field">
+          <label for="m-url-{{ c.key }}">Base URL</label>
+          <input class="input mono" id="m-url-{{ c.key }}" name="base_url" value="{{ cfg.base_url if is_active else c.base_url }}" placeholder="http://host:port/v1" required>
+          {% if "host.docker.internal" in (c.base_url or "") %}<span class="hint">Running the model on this computer? Inside Docker it is reachable as <code>host.docker.internal</code>.</span>{% endif %}
+        </div>
+        {% endif %}
+        <div class="field">
+          <label for="m-key-{{ c.key }}">API key {% if not c.needs_key %}<span class="muted">(optional)</span>{% endif %}</label>
+          <input class="input" id="m-key-{{ c.key }}" name="api_key" type="password" autocomplete="off"
+                 placeholder="{{ ('Saved (' ~ key_info.api_key_hint ~ ') – leave empty to keep') if is_active and key_info.api_key_set else ('Not needed for local servers' if not c.needs_key else 'Paste your API key') }}"
+                 {{ 'required' if c.needs_key and not (is_active and key_info.api_key_set) }}>
+          <span class="hint">Stored in ScrapeFlow's database and never shown again.</span>
+        </div>
+        <div class="field">
+          <label for="m-model-{{ c.key }}">Model name</label>
+          <input class="input mono" id="m-model-{{ c.key }}" name="model" value="{{ cfg.model if is_active and cfg.model else c.model_hint }}" placeholder="{{ c.model_hint or 'model name' }}" {{ 'required' if not c.model_hint }}>
+        </div>
+      </div>
+      <div class="dialog-foot">
+        <span class="test-result grow muted"></span>
+        <button type="button" class="btn" data-test="ai">{{ icon("zap", "sm") }}Test</button>
+        <button class="btn primary" data-busy="Saving">Save</button>
+      </div>
+    </form>
+  </dialog>
+  {% endfor %}
+</div>
+{% endblock %}

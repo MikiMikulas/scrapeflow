@@ -1,0 +1,31 @@
+{% macro icon(name, cls="") -%}
+<svg class="icon {{ cls }}" aria-hidden="true"><use href="#i-{{ name }}"/></svg>
+{%- endmacro %}
+
+{% macro avatar(site, cls="") -%}
+{%- set d = site.url | domain -%}
+<span class="avatar {{ cls }}" style="--c: {{ d | color }}" aria-hidden="true">{{ (site.name or d or "?")[:1] }}<img src="https://{{ d }}/favicon.ico" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"></span>
+{%- endmacro %}
+
+{% macro site_status(site, running=False) -%}
+{%- if running -%}<span class="pill info live">Checking…</span>
+{%- elif site.last_error -%}<span class="pill bad" title="{{ site.last_error }}">Error</span>
+{%- elif not site.active -%}<span class="pill">Paused</span>
+{%- elif not site.last_checked_at -%}<span class="pill warn">Waiting</span>
+{%- else -%}<span class="pill good">Up to date</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro file_status(f) -%}
+{%- if f.status == "stored" and f.version > 1 -%}<span class="pill info" title="Changed on the website and stored again">Updated · v{{ f.version }}</span>
+{%- elif f.status == "stored" -%}<span class="pill good">Stored</span>
+{%- elif f.status == "failed" -%}<span class="pill bad" title="{{ f.error or '' }}">Failed</span>
+{%- elif f.status == "ignored" -%}<span class="pill" title="The AI filter decided this file doesn't match">Ignored by AI</span>
+{%- elif f.status == "skipped" -%}<span class="pill" title="Already on the website at the first check">Not downloaded</span>
+{%- else -%}<span class="pill">{{ f.status }}</span>{%- endif -%}
+{%- if not f.on_site %} <span class="pill warn" title="The link is gone from the website; the stored copy is kept">Removed from site</span>{% endif -%}
+{%- endmacro %}
+
+{% macro ftype(filename) -%}
+{%- set t = filename | ftype -%}
+<span class="ftype {{ t[0] }}" aria-hidden="true">{{ t[1] }}</span>
+{%- endmacro %}

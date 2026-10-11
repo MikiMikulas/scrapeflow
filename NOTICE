@@ -1,0 +1,10 @@
+ScrapeFlow
+Copyright 2026 The ScrapeFlow Authors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes third-party software:
+
+- Drawflow 0.0.59 (https://github.com/jerosoler/Drawflow)
+  Copyright (c) 2020 Jero Soler – MIT License
+  Vendored in scrapeflow/static/vendor/drawflow/ together with its license.

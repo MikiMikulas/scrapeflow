@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ "Set up" if mode == "setup" else "Sign in" }} · ScrapeFlow</title>
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='logo.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <script>
+    try { const t = localStorage.getItem("scrapeflow-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}?v={{ version }}">
+</head>
+<body class="auth-body">
+  <main class="auth">
+    <section class="auth-form">
+      <a class="brand" href="/"><img class="brand-logo" src="{{ url_for('static', path='logo.svg') }}" alt=""><span class="brand-name">Scrape<b>Flow</b></span></a>
+      <div class="auth-box">
+        {% if mode == "setup" %}
+        <h1>Set up your admin account</h1>
+        <p class="muted">This is the first start of ScrapeFlow. The account you create here manages websites, models and storage.</p>
+        {% else %}
+        <h1>Welcome back</h1>
+        <p class="muted">Sign in to your ScrapeFlow.</p>
+        {% endif %}
+
+        {% if error %}<div class="errors" role="alert">{{ error }}</div>{% endif %}
+
+        <form method="post" class="fields" action="{{ '/setup' if mode == 'setup' else '/login' }}">
+          {% if mode == "setup" %}
+          <div class="field">
+            <label for="name">Name</label>
+            <input class="input" id="name" name="name" value="{{ name or '' }}" placeholder="Your name" autocomplete="name">
+          </div>
+          {% endif %}
+          <div class="field">
+            <label for="email">E-mail</label>
+            <input class="input" id="email" name="email" type="email" value="{{ email or '' }}" placeholder="you@example.com" autocomplete="email" required autofocus>
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input class="input" id="password" name="password" type="password" placeholder="{{ 'At least 8 characters' if mode == 'setup' else '••••••••' }}" autocomplete="{{ 'new-password' if mode == 'setup' else 'current-password' }}" required {% if mode == "setup" %}minlength="8"{% endif %}>
+          </div>
+          {% if mode == "setup" %}
+          <div class="field">
+            <label for="confirm">Confirm password</label>
+            <input class="input" id="confirm" name="confirm" type="password" autocomplete="new-password" required minlength="8">
+          </div>
+          {% else %}
+          <input type="hidden" name="next" value="{{ next or '/' }}">
+          {% endif %}
+          <button class="btn primary auth-submit">{{ "Create account and continue" if mode == "setup" else "Sign in" }}</button>
+        </form>
+        {% if mode == "login" %}
+        <p class="muted small">Forgot your password? Run <code>scrapeflow reset-password &lt;e-mail&gt;</code> on the server.</p>
+        {% endif %}
+      </div>
+      <div class="muted small">ScrapeFlow v{{ version }} · <a href="{{ GITHUB_URL }}" target="_blank" rel="noopener">Documentation on GitHub</a></div>
+    </section>
+
+    <aside class="auth-hero" aria-hidden="true">
+      <div class="hero-inner">
+        <img src="{{ url_for('static', path='logo.svg') }}" alt="" class="hero-logo">
+        <h2>Every file from the web, flowing into your own storage.</h2>
+        <ul>
+          <li><span>1</span>Crawl whole websites on a schedule</li>
+          <li><span>2</span>Keep new and changed files in S3, Nextcloud or a folder</li>
+          <li><span>3</span>Let your own AI model pick what matters</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+</body>
+</html>

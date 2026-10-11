@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#667085"/>
+    </marker>
+    <style>
+      .box { fill: #fff; stroke: #d0d5dd; stroke-width: 1.2; }
+      .group { fill: #f9fafb; stroke: #eaecf0; stroke-width: 1.2; }
+      .title { font-size: 15px; font-weight: 700; fill: #101828; }
+      .label { font-size: 13px; font-weight: 600; fill: #101828; }
+      .sub { font-size: 11.5px; fill: #667085; }
+      .cap { font-size: 11px; font-weight: 700; fill: #667085; letter-spacing: .06em; }
+      .line { stroke: #667085; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+      .dash { stroke: #98a2b3; stroke-width: 1.3; fill: none; stroke-dasharray: 5 4; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1000" height="520" rx="18" fill="#ffffff"/>
+
+  <!-- websites -->
+  <text x="40" y="44" class="cap">THE WEB</text>
+  <rect x="40" y="60" width="170" height="64" rx="12" class="box"/>
+  <text x="58" y="88" class="label">Websites</text>
+  <text x="58" y="108" class="sub">pages · PDFs · sheets</text>
+
+  <!-- engine group -->
+  <rect x="260" y="28" width="470" height="352" rx="16" class="group"/>
+  <text x="280" y="54" class="cap">SCRAPEFLOW · ONE CONTAINER</text>
+
+  <rect x="280" y="68" width="200" height="64" rx="12" class="box"/>
+  <rect x="280" y="68" width="6" height="64" rx="3" fill="#1570ef"/>
+  <text x="298" y="95" class="label">Crawler</text>
+  <text x="298" y="114" class="sub">same site · depth · robots.txt</text>
+
+  <rect x="510" y="68" width="200" height="64" rx="12" class="box"/>
+  <rect x="510" y="68" width="6" height="64" rx="3" fill="#7a5af8"/>
+  <text x="528" y="95" class="label">Change detection</text>
+  <text x="528" y="114" class="sub">new links · ETag · SHA-256</text>
+
+  <rect x="280" y="156" width="430" height="128" rx="12" class="box"/>
+  <text x="298" y="182" class="label">Flow engine</text>
+  <text x="298" y="200" class="sub">a graph per website, edited on a canvas</text>
+  <g font-size="11.5" font-weight="600">
+    <rect x="298" y="214" width="88" height="26" rx="7" fill="#f4f3ff"/><text x="342" y="231" text-anchor="middle" fill="#5925dc">Filter</text>
+    <rect x="394" y="214" width="88" height="26" rx="7" fill="#fdf2fa"/><text x="438" y="231" text-anchor="middle" fill="#c11574">AI filter</text>
+    <rect x="490" y="214" width="98" height="26" rx="7" fill="#f0fdf9"/><text x="539" y="231" text-anchor="middle" fill="#107569">To Markdown</text>
+    <rect x="596" y="214" width="98" height="26" rx="7" fill="#fef6ee"/><text x="645" y="231" text-anchor="middle" fill="#b93815">Python code</text>
+    <rect x="298" y="248" width="396" height="24" rx="7" fill="#ecfdf3"/><text x="496" y="264" text-anchor="middle" fill="#067647">Save to storage · any number of outputs per file</text>
+  </g>
+
+  <rect x="280" y="304" width="134" height="58" rx="12" class="box"/>
+  <text x="296" y="328" class="label">Scheduler</text>
+  <text x="296" y="346" class="sub">hourly … monthly</text>
+  <rect x="428" y="304" width="134" height="58" rx="12" class="box"/>
+  <text x="444" y="328" class="label">SQLite</text>
+  <text x="444" y="346" class="sub">sites · files · logs</text>
+  <rect x="576" y="304" width="134" height="58" rx="12" class="box"/>
+  <text x="592" y="328" class="label">Web UI + API</text>
+  <text x="592" y="346" class="sub">accounts · API keys</text>
+
+  <!-- storage -->
+  <text x="780" y="44" class="cap">YOUR STORAGE</text>
+  <rect x="780" y="60" width="180" height="56" rx="12" class="box"/>
+  <text x="798" y="84" class="label">Local folder</text>
+  <text x="798" y="102" class="sub">volume or NAS mount</text>
+  <rect x="780" y="128" width="180" height="56" rx="12" class="box"/>
+  <text x="798" y="152" class="label">S3-compatible</text>
+  <text x="798" y="170" class="sub">AWS · R2 · B2 · MinIO</text>
+  <rect x="780" y="196" width="180" height="56" rx="12" class="box"/>
+  <text x="798" y="220" class="label">WebDAV</text>
+  <text x="798" y="238" class="sub">Nextcloud · Synology</text>
+
+  <!-- models -->
+  <text x="780" y="300" class="cap">YOUR MODEL (OPTIONAL)</text>
+  <rect x="780" y="314" width="180" height="56" rx="12" class="box"/>
+  <text x="798" y="338" class="label">LLM provider</text>
+  <text x="798" y="356" class="sub">Ollama · OpenAI · Claude…</text>
+
+  <!-- users -->
+  <text x="40" y="300" class="cap">PEOPLE &amp; TOOLS</text>
+  <rect x="40" y="314" width="170" height="56" rx="12" class="box"/>
+  <text x="58" y="338" class="label">Browser · scripts</text>
+  <text x="58" y="356" class="sub">dashboard · JSON API</text>
+
+  <!-- arrows -->
+  <path d="M210 92H276" class="line"/>
+  <path d="M480 100H506" class="line"/>
+  <path d="M610 132V152" class="line"/>
+  <path d="M710 230C745 230 748 156 776 156" class="line"/>
+  <path d="M710 220C745 220 745 88 776 88" class="line"/>
+  <path d="M710 240C745 240 748 224 776 224" class="line"/>
+  <path d="M780 342C745 342 742 236 714 236" class="dash"/>
+  <path d="M210 342C240 342 240 394 290 394H643V366" class="dash"/>
+  <path d="M347 304V288" class="dash"/>
+
+  <!-- footer -->
+  <text x="40" y="428" class="title">Every check</text>
+  <g class="sub" font-size="12.5">
+    <text x="40" y="452">1 · crawl the website (same host, link depth, page limit, robots.txt) and collect file links</text>
+    <text x="40" y="472">2 · run the flow's filters on names and links – files that can't reach storage are never downloaded</text>
+    <text x="40" y="492">3 · download new and changed files, send them through the flow, save every output; the log shows each step</text>
+  </g>
+</svg>

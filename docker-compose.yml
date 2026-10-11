@@ -1,0 +1,48 @@
+# Quick start:   docker compose up -d            → http://localhost:8000
+#
+# With a local AI model (Ollama):
+#   docker compose --profile ollama up -d
+#   docker compose exec ollama ollama pull qwen2.5:7b
+#   → Model providers › Ollama, base URL http://ollama:11434/v1, model qwen2.5:7b
+
+services:
+  scrapeflow:
+    image: ghcr.io/mikimikulas/scrapeflow:latest
+    build: .
+    container_name: scrapeflow
+    restart: unless-stopped
+    ports:
+      - "${SCRAPEFLOW_PORT:-8000}:8000"
+    env_file:
+      - path: .env
+        required: false
+    # To get downloaded files into a folder on your computer, uncomment the two marked lines
+    # and keep "Local folder" in Storage with Folder empty.
+    # On Linux, create the folder first and make it writable for UID 10001:
+    #   mkdir -p downloads && sudo chown 10001 downloads
+    environment:
+      SCRAPEFLOW_DATA_DIR: /data
+      # SCRAPEFLOW_FILES_DIR: /downloads          # ← uncomment
+    volumes:
+      - scrapeflow-data:/data
+      # - ./downloads:/downloads             # ← uncomment
+    # Lets the container reach model servers running on your machine (Ollama, LM Studio)
+    # via http://host.docker.internal:<port>, on Linux too.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ollama"]
+    restart: unless-stopped
+    volumes:
+      - ollama-models:/root/.ollama
+    # Uncomment for NVIDIA GPUs:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices: [{ driver: nvidia, count: all, capabilities: [gpu] }]
+
+volumes:
+  scrapeflow-data:
+  ollama-models:

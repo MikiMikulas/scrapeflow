@@ -1,0 +1,15 @@
+name: Feature request
+description: An idea for ScrapeFlow – a flow node, storage, provider, anything
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What do you want to do?
+      description: The task or problem, not only the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How could ScrapeFlow help?

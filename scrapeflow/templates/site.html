@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, avatar, site_status, file_status, ftype %}
+{% block title %}{{ site.name }} · ScrapeFlow{% endblock %}
+{% block content %}
+<div class="site-layout">
+  <aside class="card side">
+    {{ avatar(site, "lg") }}
+    <div>
+      <div class="name">{{ site.name }}</div>
+      <a class="url" href="{{ site.url }}" target="_blank" rel="noopener">{{ site.url }}</a>
+    </div>
+    <div class="side-stats">
+      <div><b>{{ stats.files }}</b><span>files stored</span></div>
+      <div><b>{{ stats.size | filesize if stats.size else "0 B" }}</b><span>in storage</span></div>
+      <div><b>{{ site.last_checked_at | ago }}</b><span>last check</span></div>
+      <div><b>{% if next_run %}{{ next_run | ago }}{% elif not site.active %}paused{% else %}manual{% endif %}</b><span>next check</span></div>
+    </div>
+    <nav class="menu">
+      <a href="?tab=files" class="{{ 'active' if tab == 'files' }}">{{ icon("files") }}Files<span class="count">{{ counts.values() | sum }}</span></a>
+      <a href="/sites/{{ site.id }}/flow">{{ icon("workflow") }}Flow<span class="count">{{ "custom" if site.flow else "default" }}</span></a>
+      <a href="?tab=activity" class="{{ 'active' if tab == 'activity' }}">{{ icon("activity") }}Activity<span class="count">{{ runs | length }}</span></a>
+      <a href="?tab=settings" class="{{ 'active' if tab == 'settings' }}">{{ icon("settings") }}Settings</a>
+    </nav>
+  </aside>
+
+  <section>
+    <div class="crumbs"><a href="/">Websites</a><span>/</span><span>{{ site.name }}</span></div>
+    <div class="page-head">
+      <div class="row"><h1>{{ {"files": "Files", "activity": "Activity", "settings": "Settings"}.get(tab, "Files") }}</h1>{{ site_status(site, running) }}</div>
+      <div class="toolbar">
+        <a class="btn" href="{{ site.url }}" target="_blank" rel="noopener">{{ icon("external") }}Open website</a>
+        <form method="post" action="/sites/{{ site.id }}/check">
+          <button class="btn primary" data-busy="Starting" {{ 'disabled' if running }}>{{ icon("refresh") }}Check now</button>
+        </form>
+      </div>
+    </div>
+
+    {% if running %}
+    <div class="banner" data-running><span class="spinner"></span><span class="grow"><b>Checking the website…</b> <span id="progress">{% if runs and runs[0].status == "running" and runs[0].pages %}{{ runs[0].pages }} pages crawled · {{ runs[0].files_found }} files found{% else %}starting{% endif %}</span>. This page refreshes when it's done.</span>{% if tab != "activity" %}<a class="btn sm" href="?tab=activity">{{ icon("list", "sm") }}Show log</a>{% endif %}</div>
+    {% elif site.last_error %}
+    <div class="banner bad">{{ icon("alert") }}<span class="grow"><b>Last check failed:</b> {{ site.last_error }}</span>
+      {% if "storage" in site.last_error.lower() or "s3" in site.last_error.lower() or "webdav" in site.last_error.lower() %}<a class="btn sm" href="/settings/storage">Storage settings</a>{% endif %}</div>
+    {% endif %}
+
+    {% if tab == "activity" %}
+    {% if runs %}
+    {% set sel = (runs | selectattr("id", "equalto", selected_run) | first) or runs[0] %}
+    <div class="card console-card">
+      <div class="console-head">
+        <div class="row grow">
+          {{ icon("list", "sm") }}<b>Log</b>
+          <span class="muted small">check of {{ sel.started_at | date }}</span>
+          {% if sel.status == "running" %}<span class="pill info live">Live</span>{% endif %}
+        </div>
+        <label class="check small"><input type="checkbox" id="only-problems"><span>Only problems</span></label>
+      </div>
+      <div class="console" id="console" data-site="{{ site.id }}" data-run="{{ sel.id }}" data-live="{{ 1 if sel.status == 'running' else 0 }}">
+        <div class="console-empty">Loading…</div>
+      </div>
+    </div>
+    {% endif %}
+    <div class="card table-wrap">
+      {% if runs %}
+      <table class="table">
+        <thead><tr><th>Started</th><th>Duration</th><th class="num">Pages</th><th class="num">Files on site</th><th class="num">New</th><th class="num">Updated</th><th class="num">Failed</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for r in runs %}
+          <tr class="clickable {{ 'selected' if r.id == sel.id }}" onclick="location.href='?tab=activity&run={{ r.id }}'" title="Show the log of this check">
+            <td title="{{ r.started_at | date }}">{{ r.started_at | ago }}</td>
+            <td class="muted">{{ r | duration }}</td>
+            <td class="num">{{ r.pages }}</td>
+            <td class="num">{{ r.files_found }}</td>
+            <td class="num">{% if r.new_files %}<b>+{{ r.new_files }}</b>{% else %}<span class="muted">0</span>{% endif %}</td>
+            <td class="num">{% if r.updated_files %}<b>{{ r.updated_files }}</b>{% else %}<span class="muted">0</span>{% endif %}</td>
+            <td class="num">{% if r.failed %}<span style="color: var(--bad)">{{ r.failed }}</span>{% else %}<span class="muted">0</span>{% endif %}</td>
+            <td>
+              {% if r.status == "running" %}<span class="pill info live">Running</span>
+              {% elif r.status == "error" %}<span class="pill bad" title="{{ r.error }}">Error</span> <span class="muted small">{{ r.error | truncate(80) }}</span>
+              {% else %}<span class="pill good">Done</span>{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty"><span class="icon-wrap">{{ icon("activity") }}</span><h3>No checks yet</h3><p>Press <b>Check now</b> to crawl the website.</p></div>
+      {% endif %}
+    </div>
+
+    {% elif tab == "settings" %}
+    <div class="stack">
+      <form class="card" method="post" action="/sites/{{ site.id }}">
+        <div class="card-pad">
+          {% with is_new=False %}{% include "_site_fields.html" %}{% endwith %}
+        </div>
+        <div class="dialog-foot"><span class="grow"></span><button class="btn primary" data-busy="Saving">Save changes</button></div>
+      </form>
+      <div class="card card-pad danger-zone between">
+        <div><h3>Remove website</h3><p class="muted">Removes the website and its history from ScrapeFlow. Files already in your storage are kept.</p></div>
+        <form method="post" action="/sites/{{ site.id }}/delete" data-confirm="Remove {{ site.name }}? Stored files stay in your storage.">
+          <button class="btn danger">{{ icon("trash") }}Remove</button>
+        </form>
+      </div>
+    </div>
+
+    {% else %}
+    {% set total_all = counts.values() | sum %}
+    <div class="between" style="margin-bottom: 14px; flex-wrap: wrap">
+      <div class="chips">
+        {% for key, label in [("", "All"), ("stored", "Stored"), ("failed", "Failed"), ("ignored", "Ignored by AI"), ("skipped", "Not downloaded"), ("removed", "Removed from site")] %}
+          {% set n = total_all if not key else (removed if key == "removed" else counts.get(key, 0)) %}
+          {% if not key or n or filter == key %}
+          <a class="chip {{ 'active' if filter == key }}" href="?tab=files&filter={{ key }}{% if q %}&q={{ q | urlencode }}{% endif %}">{{ label }} <b>{{ n }}</b></a>
+          {% endif %}
+        {% endfor %}
+      </div>
+      <form class="search" method="get">
+        <input type="hidden" name="tab" value="files"><input type="hidden" name="filter" value="{{ filter }}">
+        {{ icon("search", "sm") }}<input class="input" type="search" name="q" value="{{ q }}" placeholder="Search files" aria-label="Search files">
+      </form>
+    </div>
+
+    <div class="card">
+      {% if files %}
+      <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Name</th><th class="num">Size</th><th>Found on</th><th>Updated</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for f in files %}
+          <tr>
+            <td>
+              <div class="file-cell">
+                {{ ftype(f.filename) }}
+                <div class="grow">
+                  <b class="truncate" title="{{ f.url }}">{{ f.filename }}</b>
+                  <span class="truncate">{% if f.link_text and f.link_text != f.filename %}{{ f.link_text }}{% else %}{{ f.storage_path or f.url }}{% endif %}</span>
+                  {% set outs = outputs.get(f.id, []) %}
+                  {% if outs | length > 1 or (outs and outs[0].filename != f.filename) %}
+                  <span class="outputs">{% for o in outs %}<a class="out-chip" href="/outputs/{{ o.id }}/download" title="{{ o.storage_path }} · {{ o.size | filesize }}">{{ icon("download", "sm") }}{{ o.filename }}</a>{% endfor %}</span>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+            <td class="num muted">{{ f.size | filesize }}</td>
+            <td class="small" style="max-width: 220px">{% if f.page_url %}<a class="truncate" style="display:block" href="{{ f.page_url }}" target="_blank" rel="noopener" title="{{ f.page_url }}">{{ f.page_url | path }}</a>{% endif %}</td>
+            <td class="muted small" title="{{ (f.updated_at or f.first_seen) | date }}">{{ (f.updated_at or f.first_seen) | ago }}</td>
+            <td>{{ file_status(f) }}</td>
+            <td class="num" style="white-space: nowrap">
+              {% if f.status == "stored" %}<a class="btn sm ghost icon-only" href="/files/{{ f.id }}/download" title="Download from storage">{{ icon("download", "sm") }}</a>{% endif %}
+              <a class="btn sm ghost icon-only" href="{{ f.url }}" target="_blank" rel="noopener" title="Open on the website">{{ icon("external", "sm") }}</a>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% if pages > 1 %}
+      <div class="pager">
+        <span>{{ (page - 1) * 100 + 1 }}–{{ [page * 100, total] | min }} of {{ total }}</span>
+        <span class="row">
+          {% if page > 1 %}<a class="btn sm" href="?tab=files&filter={{ filter }}&q={{ q | urlencode }}&page={{ page - 1 }}">Previous</a>{% endif %}
+          {% if page < pages %}<a class="btn sm" href="?tab=files&filter={{ filter }}&q={{ q | urlencode }}&page={{ page + 1 }}">Next</a>{% endif %}
+        </span>
+      </div>
+      {% endif %}
+      {% elif q or filter %}
+      <div class="empty"><span class="icon-wrap">{{ icon("search") }}</span><h3>Nothing found</h3><a href="?tab=files">Show all files</a></div>
+      {% elif running or not site.last_checked_at %}
+      <div class="empty"><span class="icon-wrap">{{ icon("globe") }}</span><h3>Waiting for the first check</h3><p>Files will appear here once the website has been crawled.</p></div>
+      {% else %}
+      <div class="empty"><span class="icon-wrap">{{ icon("files") }}</span><h3>No files found</h3>
+        <p>The crawler didn't find any file links. Try a deeper <a href="?tab=settings">link depth</a>, other file types, or start from the page that lists the documents.</p></div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  // Activity log console
+  (function () {
+    const box = document.getElementById("console");
+    if (!box) return;
+    const only = document.getElementById("only-problems");
+    let next = 0, lines = [];
+    const time = (t) => new Date(t * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+    function render(append) {
+      const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+      const show = (l) => !only.checked || l[1] === "warn" || l[1] === "error";
+      const html = (l) => {
+        const row = document.createElement("div");
+        row.className = "log-line " + l[1];
+        const ts = document.createElement("span"); ts.className = "ts"; ts.textContent = time(l[0]);
+        const msg = document.createElement("span"); msg.textContent = l[2];
+        row.append(ts, msg);
+        return row;
+      };
+      if (!append) box.replaceChildren();
+      (append || lines).filter(show).forEach(l => box.append(html(l)));
+      if (!box.children.length) box.innerHTML = '<div class="console-empty">' + (only.checked ? "No problems 🎉" : "No log for this check.") + "</div>";
+      else box.querySelector(".console-empty")?.remove();
+      if (atBottom || !append) box.scrollTop = box.scrollHeight;
+    }
+    async function load() {
+      try {
+        const r = await fetch(`/api/sites/${box.dataset.site}/log?run_id=${box.dataset.run}&after=${next}`);
+        const j = await r.json();
+        const fresh = j.lines || [];
+        next = j.next;
+        const first = !lines.length;
+        lines = lines.concat(fresh);
+        render(first ? null : fresh);
+        if (j.running) setTimeout(load, 1500);
+      } catch (e) { setTimeout(load, 3000); }
+    }
+    only.addEventListener("change", () => render(null));
+    load();
+  })();
+</script>
+{% if running %}
+<script>
+  (function poll() {
+    setTimeout(async () => {
+      try {
+        const r = await fetch("/api/sites/{{ site.id }}/status");
+        if (r.ok) {
+          const s = await r.json();
+          if (!s.running) return location.reload();
+          const run = s.last_run;
+          if (run && run.pages) document.getElementById("progress").textContent =
+            run.pages + " pages crawled · " + run.files_found + " files found";
+        }
+      } catch (e) {}
+      poll();
+    }, 3000);
+  })();
+</script>
+{% endif %}
+{% endblock %}
